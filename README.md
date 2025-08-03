@@ -1,3 +1,7 @@
+NAME:S SANDEEP
+DOMAIN:Digital Electronics and VSLI 
+DURATION:1 MONTH
+
 Project Overview: FPGA-Based Traffic Light Controller with Priority System
 *Objective:
 Design and implement a traffic light controller using an FPGA that can manage a four-way intersection with an intelligent priority system. The system should dynamically prioritize emergency vehicles or reduce waiting time for high-traffic lanes using programmable logic.
