@@ -1,1 +1,126 @@
+module traffic_light_controller (
+    input clk,
+    input reset,
+    input emergency_ns,
+    input emergency_ew,
+    output reg [1:0] ns_light,
+    output reg [1:0] ew_light
+);
+
+    // Define light states
+    localparam RED    = 2'b00;
+    localparam GREEN  = 2'b01;
+    localparam YELLOW = 2'b10;
+
+    // FSM states
+    typedef enum logic [2:0] {
+        NS_GREEN,
+        NS_YELLOW,
+        EW_GREEN,
+        EW_YELLOW,
+        NS_EMERGENCY,
+        EW_EMERGENCY
+    } state_t;
+
+    state_t current_state, next_state;
+
+    integer counter;
+
+    // Timing durations (in clock cycles)
+    localparam GREEN_TIME   = 50;
+    localparam YELLOW_TIME  = 10;
+    localparam EMERGENCY_TIME = 40;
+
+    // FSM: State register
+    always @(posedge clk or posedge reset) begin
+        if (reset) begin
+            current_state <= NS_GREEN;
+            counter <= 0;
+        end else begin
+            current_state <= next_state;
+            counter <= (counter == 0) ? 0 : counter - 1;
+        end
+    end
+
+    // FSM: Next state logic
+    always @(*) begin
+        next_state = current_state;
+        case (current_state)
+            NS_GREEN: begin
+                if (emergency_ew) next_state = EW_EMERGENCY;
+                else if (counter == 0) next_state = NS_YELLOW;
+            end
+
+            NS_YELLOW: begin
+                if (counter == 0) next_state = EW_GREEN;
+            end
+
+            EW_GREEN: begin
+                if (emergency_ns) next_state = NS_EMERGENCY;
+                else if (counter == 0) next_state = EW_YELLOW;
+            end
+
+            EW_YELLOW: begin
+                if (counter == 0) next_state = NS_GREEN;
+            end
+
+            NS_EMERGENCY: begin
+                if (counter == 0) next_state = EW_GREEN;
+            end
+
+            EW_EMERGENCY: begin
+                if (counter == 0) next_state = NS_GREEN;
+            end
+
+            default: next_state = NS_GREEN;
+        endcase
+    end
+
+    // Output logic and counter control
+    always @(posedge clk or posedge reset) begin
+        if (reset) begin
+            ns_light <= RED;
+            ew_light <= RED;
+            counter <= GREEN_TIME;
+        end else begin
+            case (next_state)
+                NS_GREEN: begin
+                    ns_light <= GREEN;
+                    ew_light <= RED;
+                    if (current_state != NS_GREEN) counter <= GREEN_TIME;
+                end
+
+                NS_YELLOW: begin
+                    ns_light <= YELLOW;
+                    ew_light <= RED;
+                    if (current_state != NS_YELLOW) counter <= YELLOW_TIME;
+                end
+
+                EW_GREEN: begin
+                    ns_light <= RED;
+                    ew_light <= GREEN;
+                    if (current_state != EW_GREEN) counter <= GREEN_TIME;
+                end
+
+                EW_YELLOW: begin
+                    ns_light <= RED;
+                    ew_light <= YELLOW;
+                    if (current_state != EW_YELLOW) counter <= YELLOW_TIME;
+                end
+
+                NS_EMERGENCY: begin
+                    ns_light <= GREEN;
+                    ew_light <= RED;
+                    if (current_state != NS_EMERGENCY) counter <= EMERGENCY_TIME;
+                end
+
+                EW_EMERGENCY: begin
+                    ns_light <= RED;
+                    ew_light <= GREEN;
+                    if (current_state != EW_EMERGENCY) counter <= EMERGENCY_TIME;
+                end
+            endcase
+        end
+    end
+endmodule
 
